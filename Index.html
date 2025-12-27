@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Adsgptpro - Pro Dashboard</title>
+    
+    <script src="https://ad.gigapub.tech/script?id=2873" async></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        
+        :root {
+            --blue-gradient: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+            --purple-gradient: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            --text-black: #0f172a;
+            --text-grey: #64748b;
+            --success: #10b981;
+        }
+
+        body { font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; padding: 0 15px 110px 15px; background: #ffffff; color: var(--text-black); min-height: 100vh; }
+        .container { max-width: 500px; margin: 0 auto; }
+
+        /* Header UI */
+        .header { padding: 30px 0 15px; display: flex; justify-content: space-between; align-items: center; }
+        
+        /* Dashboard Card */
+        .card-large { background: var(--purple-gradient); padding: 30px 25px; border-radius: 32px; color: white; margin: 10px 0 25px; box-shadow: 0 20px 40px rgba(37, 117, 252, 0.25); position: relative; overflow: hidden; }
+        .bal-usdt { font-size: 38px; font-weight: 800; margin: 10px 0; }
+        .bal-inr { font-size: 16px; font-weight: 600; background: rgba(255,255,255,0.15); padding: 6px 16px; border-radius: 50px; display: inline-block; }
+
+        /* Progress Card */
+        .goal-card { background: #f8fafc; padding: 20px; border-radius: 24px; border: 1px solid #f1f5f9; margin-bottom: 20px; }
+        .progress-container { height: 10px; background: #e2e8f0; border-radius: 50px; overflow: hidden; margin-top: 10px; }
+        .progress-bar { height: 100%; background: var(--blue-gradient); width: 0%; transition: 1s ease; }
+
+        /* Transaction History */
+        .history-title { font-weight: 800; margin: 25px 0 15px 5px; font-size: 18px; color: var(--text-black); }
+        .history-item { 
+            background: #ffffff; border: 1.5px solid #f1f5f9; padding: 15px; 
+            border-radius: 20px; margin-bottom: 12px; display: flex; 
+            justify-content: space-between; align-items: center;
+        }
+        .status-badge { font-size: 11px; padding: 4px 10px; border-radius: 50px; font-weight: 700; text-transform: uppercase; display: flex; align-items: center; gap: 5px; }
+        .st-pending { background: #fffbeb; color: #b45309; }
+        .st-success { background: #ecfdf5; color: #065f46; }
+
+        /* Ads Grid */
+        .ads-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .ad-card { background: #ffffff; border: 1px solid #f1f5f9; border-radius: 24px; padding: 20px 15px; text-align: center; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        .btn-watch { width: 100%; border: none; background: var(--blue-gradient); color: white; padding: 12px; border-radius: 14px; font-weight: 700; cursor: pointer; }
+
+        /* Wallet Methods */
+        .wallet-card { background: #ffffff; border: 2px solid #f1f5f9; border-radius: 20px; padding: 18px; margin-bottom: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .wallet-card.active { border-color: #3a7bd5; background: #f0f7ff; }
+        .wallet-card i { font-size: 20px; color: #3a7bd5; }
+
+        /* Bottom Nav */
+        .nav-fixed { position: fixed; bottom: 20px; left: 20px; right: 20px; background: #ffffff; display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 15px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-width: 460px; margin: auto; z-index: 999; }
+        .nav-btn { background: none; border: none; color: #94a3b8; font-size: 12px; font-weight: 600; cursor: pointer; text-align: center; }
+        .nav-btn.active { color: #2575fc; }
+        .nav-btn i { font-size: 22px; margin-bottom: 4px; }
+
+        .view { display: none; }
+        .view.active { display: block; animation: fadeIn 0.4s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        #overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.9); display: none; justify-content: center; align-items: center; z-index: 10000; }
+    </style>
+</head>
+<body>
+
+    <div id="overlay"><div style="text-align:center;"><i class="fa-solid fa-spinner fa-spin" style="font-size:40px; color:#3a7bd5;"></i><p>LOADING AD...</p></div></div>
+
+    <div class="container">
+        <div class="header">
+            <h2 id="greeting" style="margin:0;">Hello User</h2>
+            <div style="font-weight: 800; color: #3a7bd5;">ADSGPT PRO</div>
+        </div>
+
+        <div id="home-view" class="view active">
+            <div class="card-large">
+                <div style="font-size: 12px; opacity: 0.8;">NET BALANCE</div>
+                <div class="bal-usdt" id="display-usdt">0.0000 USDT</div>
+                <div class="bal-inr" id="display-inr">₹ 0.00</div>
+            </div>
+
+            <div class="goal-card">
+                <div style="display:flex; justify-content:space-between; font-weight:700; font-size:13px;">
+                    <span>Daily Progress (Limit 500)</span>
+                    <span id="goal-percent">0%</span>
+                </div>
+                <div class="progress-container"><div class="progress-bar" id="goal-bar"></div></div>
+            </div>
+
+            <div id="history-section">
+                <div class="history-title">Withdrawal History</div>
+                <div id="history-list"></div>
+            </div>
+        </div>
+
+        <div id="ads-view" class="view">
+            <h4 style="margin:0 0 15px 5px; color:var(--text-grey);">Watch & Earn</h4>
+            <div class="ads-container" id="slots-container"></div>
+        </div>
+
+        <div id="wallet-view" class="view">
+            <h4 style="margin:0 0 15px 5px; color:var(--text-grey);">Withdrawal Methods</h4>
+            
+            <div class="wallet-card" onclick="selectWay('upi', 100, 'INR', 'UPI ID or Mobile Number')">
+                <div><b>UPI Transfer</b><br><small>Min Withdrawal ₹100</small></div>
+                <i class="fa-solid fa-mobile-screen"></i>
+            </div>
+
+            <div class="wallet-card" onclick="selectWay('giftcard', 50, 'INR', 'Enter Email Address')">
+                <div><b>Play Gift Card</b><br><small>Min Withdrawal ₹50</small></div>
+                <i class="fa-brands fa-google-play"></i>
+            </div>
+
+            <div class="wallet-card" onclick="selectWay('usdt', 5, 'USDT', 'USDT TON Wallet Address')">
+                <div><b>USDT (TON)</b><br><small>Min Withdrawal $5</small></div>
+                <i class="fa-solid fa-wallet"></i>
+            </div>
+
+            <div id="withdraw-form" style="display:none; margin-top:15px; background:#f8fafc; padding:20px; border-radius:24px;">
+                <input type="text" id="p-info" style="width:100%; padding:15px; border-radius:12px; border:1px solid #ddd; margin-bottom:10px; font-family:inherit;" placeholder="Details">
+                <input type="number" id="p-amt" style="width:100%; padding:15px; border-radius:12px; border:1px solid #ddd; margin-bottom:15px; font-family:inherit;" placeholder="Amount">
+                <button onclick="submitRequest()" style="width:100%; padding:18px; background:var(--blue-gradient); color:white; border:none; border-radius:15px; font-weight:800; cursor:pointer;">SUBMIT REQUEST</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="nav-fixed">
+        <button class="nav-btn active" onclick="switchTab('home', this)"><i class="fa-solid fa-house"></i><br>Home</button>
+        <button class="nav-btn" onclick="switchTab('ads', this)"><i class="fa-solid fa-circle-play"></i><br>Watch</button>
+        <button class="nav-btn" onclick="switchTab('wallet', this)"><i class="fa-solid fa-wallet"></i><br>Wallet</button>
+    </div>
+
+    <script>
+        const CONFIG = {
+            BOT_TOKEN: '8270496065:AAEJE96nwnqgbjNfLw8BbvaMQsytZedrXaI',
+            ADMIN_ID: '6601027952',
+            AD_VAL: 0.0005,
+            INR_RATE: 88,
+            WAIT_DAYS: 7 
+        };
+
+        let db = JSON.parse(localStorage.getItem('adpro_v10')) || {
+            balance: 0, total: 0, today: 0, date: new Date().toLocaleDateString(), timers: {}, history: []
+        };
+
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+
+        function switchTab(id, el) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(id + '-view').classList.add('active');
+            el.classList.add('active');
+            if(id === 'ads') loadAds();
+            if(id === 'home') renderHistory();
+        }
+
+        function updateUI() {
+            document.getElementById('display-usdt').innerText = db.balance.toFixed(4) + ' USDT';
+            document.getElementById('display-inr').innerText = '₹ ' + (db.balance * CONFIG.INR_RATE).toFixed(2);
+            let p = (db.today / 500) * 100;
+            document.getElementById('goal-bar').style.width = p + '%';
+            document.getElementById('goal-percent').innerText = Math.round(p) + '%';
+            localStorage.setItem('adpro_v10', JSON.stringify(db));
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('history-list');
+            list.innerHTML = '';
+            if(db.history.length === 0) { list.innerHTML = '<p style="color:grey; font-size:12px; margin-left:5px;">No transactions yet.</p>'; return; }
+            
+            const now = Date.now();
+            const waitMs = CONFIG.WAIT_DAYS * 24 * 60 * 60 * 1000;
+
+            [...db.history].reverse().forEach(item => {
+                const timePassed = now - item.timestamp;
+                let statusTxt = "Pending";
+                let statusClass = "st-pending";
+                let icon = '<i class="fa-solid fa-clock"></i>';
+                
+                if(timePassed >= waitMs) {
+                    statusTxt = "Success";
+                    statusClass = "st-success";
+                    icon = '<i class="fa-solid fa-check-circle"></i>';
+                } else {
+                    let daysLeft = Math.ceil((waitMs - timePassed) / (1000 * 60 * 60 * 24));
+                    statusTxt = daysLeft + " Days Left";
+                }
+
+                list.innerHTML += `
+                    <div class="history-item">
+                        <div>
+                            <div style="font-weight:700;">${item.amount} ${item.currency}</div>
+                            <div style="font-size:10px; color:grey;">${item.date} • ${item.method.toUpperCase()}</div>
+                        </div>
+                        <div class="status-badge ${statusClass}">${icon} ${statusTxt}</div>
+                    </div>
+                `;
+            });
+        }
+
+        function loadAds() {
+            const container = document.getElementById('slots-container');
+            container.innerHTML = '';
+            const now = Date.now();
+            for(let i=1; i<=10; i++) {
+                const unlockAt = db.timers[i] || 0;
+                const card = document.createElement('div');
+                card.className = 'ad-card';
+                if(unlockAt > now) {
+                    let rem = Math.ceil((unlockAt-now)/1000);
+                    card.innerHTML = `<b>Slot ${i}</b><br><small>Wait ${rem}s</small>`;
+                    setTimeout(loadAds, 1000);
+                } else {
+                    card.innerHTML = `<b>Slot ${i}</b><br><small style="color:green;">+0.0005</small><br><br><button class="btn-watch" onclick="runAd(${i})">Watch</button>`;
+                }
+                container.appendChild(card);
+            }
+        }
+
+        function runAd(id) {
+            if(db.today >= 500) return alert("Daily limit reached!");
+            document.getElementById('overlay').style.display = 'flex';
+            window.showGiga().then(() => {
+                db.balance += CONFIG.AD_VAL; db.today++;
+                db.timers[id] = Date.now() + 180000;
+                updateUI(); loadAds();
+            }).finally(() => document.getElementById('overlay').style.display = 'none');
+        }
+
+        let selected = null;
+        function selectWay(m, min, cur, p) {
+            selected = {m, min, cur};
+            document.querySelectorAll('.wallet-card').forEach(c => c.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            document.getElementById('withdraw-form').style.display = 'block';
+            document.getElementById('p-info').placeholder = p;
+            document.getElementById('p-amt').placeholder = `Min ${cur} ${min}`;
+        }
+
+        function submitRequest() {
+            const info = document.getElementById('p-info').value;
+            const amt = parseFloat(document.getElementById('p-amt').value);
+            if(!info || !amt || !selected) return alert("Fill all details");
+            
+            let userBal = (selected.cur === 'USDT') ? db.balance : (db.balance * CONFIG.INR_RATE);
+            if(amt < selected.min || amt > userBal) return alert("Insufficient Balance or Invalid Amount");
+
+            const newTx = {
+                timestamp: Date.now(),
+                date: new Date().toLocaleDateString(),
+                amount: amt,
+                currency: selected.cur,
+                method: selected.m,
+                info: info
+            };
+            db.history.push(newTx);
+            
+            let deduct = (selected.cur === 'USDT') ? amt : (amt / CONFIG.INR_RATE);
+            db.balance -= deduct;
+
+            const txt = `🎁 *NEW WITHDRAWAL*\n\nUser: ${tg.initDataUnsafe.user?.first_name}\nMethod: ${selected.m.toUpperCase()}\nAmount: ${amt} ${selected.cur}\nDetail: ${info}`;
+            fetch(`https://api.telegram.org/bot${CONFIG.BOT_TOKEN}/sendMessage`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ chat_id: CONFIG.ADMIN_ID, text: txt, parse_mode: 'Markdown' })
+            });
+
+            updateUI();
+            alert("Withdrawal Requested! It will show Success in 7 days.");
+            switchTab('home', document.querySelector('.nav-btn'));
+        }
+
+        window.onload = () => {
+            if(db.date !== new Date().toLocaleDateString()) { db.today = 0; db.date = new Date().toLocaleDateString(); }
+            updateUI();
+            renderHistory();
+        };
+    </script>
+</body>
+</html>
