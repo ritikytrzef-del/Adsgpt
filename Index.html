@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Adsgptpro - Pro Dashboard</title>
+    <title>Earn Reward - Pro Dashboard</title>
     
-    <script src="https://ad.gigapub.tech/script?id=2873" async></script>
+    <script src="https://zunex.icu/cdn/ads.js?app_uid=8058"></script>
+    
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     
     <style>
@@ -15,6 +17,7 @@
         :root {
             --blue-gradient: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
             --purple-gradient: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            --pink-blue: linear-gradient(90deg, #ff00cc 0%, #3333ff 100%);
             --text-black: #0f172a;
             --text-grey: #64748b;
             --success: #10b981;
@@ -27,9 +30,12 @@
         .header { padding: 30px 0 15px; display: flex; justify-content: space-between; align-items: center; }
         
         /* Dashboard Card */
-        .card-large { background: var(--purple-gradient); padding: 30px 25px; border-radius: 32px; color: white; margin: 10px 0 25px; box-shadow: 0 20px 40px rgba(37, 117, 252, 0.25); position: relative; overflow: hidden; }
-        .bal-usdt { font-size: 38px; font-weight: 800; margin: 10px 0; }
-        .bal-inr { font-size: 16px; font-weight: 600; background: rgba(255,255,255,0.15); padding: 6px 16px; border-radius: 50px; display: inline-block; }
+        .card-large { background: var(--purple-gradient); padding: 30px 25px; border-radius: 32px; color: white; margin: 10px 0 25px; box-shadow: 0 20px 40px rgba(37, 117, 252, 0.25); position: relative; overflow: hidden; text-align: center; }
+        .bal-label { font-size: 14px; opacity: 0.9; margin-bottom: 5px; }
+        .bal-amount { font-size: 42px; font-weight: 800; }
+
+        /* Chart Card */
+        .chart-card { background: #ffffff; border: 1px solid #f1f5f9; padding: 20px; border-radius: 24px; margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.03); }
 
         /* Progress Card */
         .goal-card { background: #f8fafc; padding: 20px; border-radius: 24px; border: 1px solid #f1f5f9; margin-bottom: 20px; }
@@ -37,7 +43,7 @@
         .progress-bar { height: 100%; background: var(--blue-gradient); width: 0%; transition: 1s ease; }
 
         /* Transaction History */
-        .history-title { font-weight: 800; margin: 25px 0 15px 5px; font-size: 18px; color: var(--text-black); }
+        .history-title { font-weight: 800; margin: 0 0 15px 5px; font-size: 18px; color: var(--text-grey); }
         .history-item { 
             background: #ffffff; border: 1.5px solid #f1f5f9; padding: 15px; 
             border-radius: 20px; margin-bottom: 12px; display: flex; 
@@ -58,14 +64,32 @@
         .wallet-card i { font-size: 20px; color: #3a7bd5; }
 
         /* Bottom Nav */
-        .nav-fixed { position: fixed; bottom: 20px; left: 20px; right: 20px; background: #ffffff; display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 15px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-width: 460px; margin: auto; z-index: 999; }
-        .nav-btn { background: none; border: none; color: #94a3b8; font-size: 12px; font-weight: 600; cursor: pointer; text-align: center; }
+        .nav-fixed { position: fixed; bottom: 20px; left: 20px; right: 20px; background: #ffffff; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; padding: 15px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-width: 460px; margin: auto; z-index: 999; }
+        .nav-btn { background: none; border: none; color: #94a3b8; font-size: 11px; font-weight: 600; cursor: pointer; text-align: center; }
         .nav-btn.active { color: #2575fc; }
-        .nav-btn i { font-size: 22px; margin-bottom: 4px; }
+        .nav-btn i { font-size: 20px; margin-bottom: 4px; }
 
         .view { display: none; }
         .view.active { display: block; animation: fadeIn 0.4s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* BRANDING STYLE */
+        .branding { 
+            text-align: center; 
+            margin-top: 40px; 
+            margin-bottom: 20px; 
+            color: #94a3b8; 
+            font-size: 13px; 
+            font-weight: 600;
+        }
+        .branding b {
+            font-size: 16px;
+            background: var(--pink-blue);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+            text-shadow: 0px 5px 10px rgba(255, 0, 204, 0.1);
+        }
 
         #overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.9); display: none; justify-content: center; align-items: center; z-index: 10000; }
     </style>
@@ -76,15 +100,25 @@
 
     <div class="container">
         <div class="header">
-            <h2 id="greeting" style="margin:0;">Hello User</h2>
-            <div style="font-weight: 800; color: #3a7bd5;">ADSGPT PRO</div>
+            <div>
+                <h2 style="margin:0;">Ads Reward</h2>
+                <div id="greeting-user" style="font-size: 13px; color: var(--text-grey); font-weight: 600;"></div>
+            </div>
+            <div style="font-weight: 800; color: #3a7bd5;">DASHBOARD</div>
         </div>
 
         <div id="home-view" class="view active">
             <div class="card-large">
-                <div style="font-size: 12px; opacity: 0.8;">NET BALANCE</div>
-                <div class="bal-usdt" id="display-usdt">0.0000 USDT</div>
-                <div class="bal-inr" id="display-inr">₹ 0.00</div>
+                <div class="bal-label">TOTAL BALANCE (INR)</div>
+                <div class="bal-amount" id="display-balance">₹ 0.00</div>
+            </div>
+
+            <div class="chart-card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h4 style="margin:0; color:var(--text-grey);">Weekly Earnings</h4>
+                    <span style="font-size:10px; background:#f0f7ff; color:#3a7bd5; padding:4px 8px; border-radius:8px; font-weight:bold;">Sun - Sat</span>
+                </div>
+                <canvas id="weeklyChart" height="180"></canvas>
             </div>
 
             <div class="goal-card">
@@ -93,11 +127,6 @@
                     <span id="goal-percent">0%</span>
                 </div>
                 <div class="progress-container"><div class="progress-bar" id="goal-bar"></div></div>
-            </div>
-
-            <div id="history-section">
-                <div class="history-title">Withdrawal History</div>
-                <div id="history-list"></div>
             </div>
         </div>
 
@@ -109,19 +138,9 @@
         <div id="wallet-view" class="view">
             <h4 style="margin:0 0 15px 5px; color:var(--text-grey);">Withdrawal Methods</h4>
             
-            <div class="wallet-card" onclick="selectWay('upi', 100, 'INR', 'UPI ID or Mobile Number')">
-                <div><b>UPI Transfer</b><br><small>Min Withdrawal ₹100</small></div>
-                <i class="fa-solid fa-mobile-screen"></i>
-            </div>
-
-            <div class="wallet-card" onclick="selectWay('giftcard', 50, 'INR', 'Enter Email Address')">
-                <div><b>Play Gift Card</b><br><small>Min Withdrawal ₹50</small></div>
+            <div class="wallet-card" onclick="selectWay('giftcard', 10, 'INR', 'Enter Email Address')">
+                <div><b>Google Play Gift Card</b><br><small>Min Withdrawal ₹10</small></div>
                 <i class="fa-brands fa-google-play"></i>
-            </div>
-
-            <div class="wallet-card" onclick="selectWay('usdt', 5, 'USDT', 'USDT TON Wallet Address')">
-                <div><b>USDT (TON)</b><br><small>Min Withdrawal $5</small></div>
-                <i class="fa-solid fa-wallet"></i>
             </div>
 
             <div id="withdraw-form" style="display:none; margin-top:15px; background:#f8fafc; padding:20px; border-radius:24px;">
@@ -130,52 +149,118 @@
                 <button onclick="submitRequest()" style="width:100%; padding:18px; background:var(--blue-gradient); color:white; border:none; border-radius:15px; font-weight:800; cursor:pointer;">SUBMIT REQUEST</button>
             </div>
         </div>
+
+        <div id="history-view" class="view">
+            <h4 class="history-title">Transaction History</h4>
+            <div id="history-list"></div>
+        </div>
+
+        <div class="branding">
+            Powered by <b>Reward Software</b>
+        </div>
     </div>
 
     <div class="nav-fixed">
         <button class="nav-btn active" onclick="switchTab('home', this)"><i class="fa-solid fa-house"></i><br>Home</button>
         <button class="nav-btn" onclick="switchTab('ads', this)"><i class="fa-solid fa-circle-play"></i><br>Watch</button>
         <button class="nav-btn" onclick="switchTab('wallet', this)"><i class="fa-solid fa-wallet"></i><br>Wallet</button>
+        <button class="nav-btn" onclick="switchTab('history', this)"><i class="fa-solid fa-clock-rotate-left"></i><br>History</button>
     </div>
 
     <script>
         const CONFIG = {
             BOT_TOKEN: '8270496065:AAEJE96nwnqgbjNfLw8BbvaMQsytZedrXaI',
             ADMIN_ID: '6601027952',
-            AD_VAL: 0.0005,
-            INR_RATE: 88,
+            AD_VAL: 0.02, // DIRECT RUPEES
             WAIT_DAYS: 7 
         };
 
-        let db = JSON.parse(localStorage.getItem('adpro_v10')) || {
-            balance: 0, total: 0, today: 0, date: new Date().toLocaleDateString(), timers: {}, history: []
+        // Changed Key to v12 to reset old USDT data and start fresh with INR
+        let db = JSON.parse(localStorage.getItem('adpro_v12')) || {
+            balance: 0, total: 0, today: 0, 
+            date: new Date().toLocaleDateString(), 
+            timers: {}, history: [],
+            dailyStats: {} 
         };
+
+        if(!db.dailyStats) db.dailyStats = {};
 
         const tg = window.Telegram.WebApp;
         tg.ready();
+        tg.expand();
+
+        let chartInstance = null;
+
+        function initChart() {
+            const ctx = document.getElementById('weeklyChart').getContext('2d');
+            const today = new Date();
+            const dayOfWeek = today.getDay(); 
+            const sunday = new Date(today);
+            sunday.setDate(today.getDate() - dayOfWeek);
+            
+            let labels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+            let dataPoints = [];
+
+            for(let i = 0; i < 7; i++) {
+                let d = new Date(sunday);
+                d.setDate(sunday.getDate() + i);
+                let dateKey = d.toISOString().split('T')[0];
+                dataPoints.push(db.dailyStats[dateKey] || 0);
+            }
+
+            if(chartInstance) chartInstance.destroy();
+
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Earn (₹)', // Changed Label to Rupee
+                        data: dataPoints,
+                        backgroundColor: '#3a7bd5',
+                        borderRadius: 5,
+                        barThickness: 12
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { display: false }, ticks: { font: {size: 10} } },
+                        x: { grid: { display: false }, ticks: { font: {size: 10} } }
+                    }
+                }
+            });
+        }
 
         function switchTab(id, el) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(id + '-view').classList.add('active');
             el.classList.add('active');
+            
             if(id === 'ads') loadAds();
-            if(id === 'home') renderHistory();
+            if(id === 'home') initChart();
+            if(id === 'history') renderHistory();
         }
 
         function updateUI() {
-            document.getElementById('display-usdt').innerText = db.balance.toFixed(4) + ' USDT';
-            document.getElementById('display-inr').innerText = '₹ ' + (db.balance * CONFIG.INR_RATE).toFixed(2);
+            // DIRECT INR DISPLAY
+            document.getElementById('display-balance').innerText = '₹ ' + db.balance.toFixed(2);
+            
             let p = (db.today / 500) * 100;
             document.getElementById('goal-bar').style.width = p + '%';
             document.getElementById('goal-percent').innerText = Math.round(p) + '%';
-            localStorage.setItem('adpro_v10', JSON.stringify(db));
+            localStorage.setItem('adpro_v12', JSON.stringify(db));
         }
 
         function renderHistory() {
             const list = document.getElementById('history-list');
             list.innerHTML = '';
-            if(db.history.length === 0) { list.innerHTML = '<p style="color:grey; font-size:12px; margin-left:5px;">No transactions yet.</p>'; return; }
+            if(db.history.length === 0) { 
+                list.innerHTML = '<div style="text-align:center; margin-top:50px; color:grey;"><i class="fa-solid fa-folder-open" style="font-size:30px; margin-bottom:10px;"></i><br>No transactions found</div>'; 
+                return; 
+            }
             
             const now = Date.now();
             const waitMs = CONFIG.WAIT_DAYS * 24 * 60 * 60 * 1000;
@@ -198,8 +283,8 @@
                 list.innerHTML += `
                     <div class="history-item">
                         <div>
-                            <div style="font-weight:700;">${item.amount} ${item.currency}</div>
-                            <div style="font-size:10px; color:grey;">${item.date} • ${item.method.toUpperCase()}</div>
+                            <div style="font-weight:700;">₹ ${item.amount}</div>
+                            <div style="font-size:10px; color:grey;">${item.date} • ${item.method}</div>
                         </div>
                         <div class="status-badge ${statusClass}">${icon} ${statusTxt}</div>
                     </div>
@@ -220,7 +305,7 @@
                     card.innerHTML = `<b>Slot ${i}</b><br><small>Wait ${rem}s</small>`;
                     setTimeout(loadAds, 1000);
                 } else {
-                    card.innerHTML = `<b>Slot ${i}</b><br><small style="color:green;">+0.0005</small><br><br><button class="btn-watch" onclick="runAd(${i})">Watch</button>`;
+                    card.innerHTML = `<b>Slot ${i}</b><br><small style="color:green;">+₹0.02</small><br><br><button class="btn-watch" onclick="runAd(${i})">Watch</button>`;
                 }
                 container.appendChild(card);
             }
@@ -229,11 +314,23 @@
         function runAd(id) {
             if(db.today >= 500) return alert("Daily limit reached!");
             document.getElementById('overlay').style.display = 'flex';
-            window.showGiga().then(() => {
-                db.balance += CONFIG.AD_VAL; db.today++;
-                db.timers[id] = Date.now() + 180000;
-                updateUI(); loadAds();
-            }).finally(() => document.getElementById('overlay').style.display = 'none');
+            
+            window.showAdsovio()
+                .then(() => {
+                    db.balance += CONFIG.AD_VAL; 
+                    db.today++;
+                    const dateKey = new Date().toISOString().split('T')[0];
+                    db.dailyStats[dateKey] = (db.dailyStats[dateKey] || 0) + CONFIG.AD_VAL;
+                    db.timers[id] = Date.now() + 180000;
+                    updateUI(); 
+                    loadAds();
+                })
+                .catch(e => {
+                    alert("Ad failed to load. Please try again.");
+                })
+                .finally(() => {
+                    document.getElementById('overlay').style.display = 'none';
+                });
         }
 
         let selected = null;
@@ -243,7 +340,7 @@
             event.currentTarget.classList.add('active');
             document.getElementById('withdraw-form').style.display = 'block';
             document.getElementById('p-info').placeholder = p;
-            document.getElementById('p-amt').placeholder = `Min ${cur} ${min}`;
+            document.getElementById('p-amt').placeholder = `Min ₹${min}`;
         }
 
         function submitRequest() {
@@ -251,23 +348,25 @@
             const amt = parseFloat(document.getElementById('p-amt').value);
             if(!info || !amt || !selected) return alert("Fill all details");
             
-            let userBal = (selected.cur === 'USDT') ? db.balance : (db.balance * CONFIG.INR_RATE);
-            if(amt < selected.min || amt > userBal) return alert("Insufficient Balance or Invalid Amount");
+            // Simple INR Balance Check
+            if(amt < selected.min || amt > db.balance) return alert("Insufficient Balance");
 
+            const user = tg.initDataUnsafe.user || { first_name: 'Unknown', username: 'User' };
             const newTx = {
                 timestamp: Date.now(),
                 date: new Date().toLocaleDateString(),
                 amount: amt,
-                currency: selected.cur,
-                method: selected.m,
+                currency: 'INR',
+                method: 'Google Play',
                 info: info
             };
             db.history.push(newTx);
             
-            let deduct = (selected.cur === 'USDT') ? amt : (amt / CONFIG.INR_RATE);
-            db.balance -= deduct;
+            // Direct Deduction
+            db.balance -= amt;
 
-            const txt = `🎁 *NEW WITHDRAWAL*\n\nUser: ${tg.initDataUnsafe.user?.first_name}\nMethod: ${selected.m.toUpperCase()}\nAmount: ${amt} ${selected.cur}\nDetail: ${info}`;
+            const txt = `🎁 *NEW WITHDRAWAL*\n\n👤 Name: ${user.first_name}\n💰 Amt: ₹${amt}\n💳 Method: Google Play\n📝 Detail: ${info}`;
+            
             fetch(`https://api.telegram.org/bot${CONFIG.BOT_TOKEN}/sendMessage`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -275,14 +374,17 @@
             });
 
             updateUI();
-            alert("Withdrawal Requested! It will show Success in 7 days.");
-            switchTab('home', document.querySelector('.nav-btn'));
+            alert("Withdrawal Requested!");
+            switchTab('history', document.querySelectorAll('.nav-btn')[3]); 
         }
 
         window.onload = () => {
+            if(tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                document.getElementById('greeting-user').innerText = "@" + (tg.initDataUnsafe.user.username || "User");
+            }
             if(db.date !== new Date().toLocaleDateString()) { db.today = 0; db.date = new Date().toLocaleDateString(); }
             updateUI();
-            renderHistory();
+            initChart();
         };
     </script>
 </body>
