@@ -7,7 +7,11 @@
     
     <script src="https://richinfo.co/richpartners/telegram/js/tg-ob.js"></script>
     <script src="https://ad.gigapub.tech/script?id=5481"></script>
+    
     <script src='//libtl.com/sdk.js' data-zone='59' data-sdk='show_59'></script>
+    
+    <script src='//libtl.com/sdk.js' data-zone='10545405' data-sdk='show_10545405'></script>
+    
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
@@ -44,7 +48,6 @@
         .ads-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .ad-card { background: #ffffff; border: 1px solid #f1f5f9; border-radius: 24px; padding: 20px 15px; text-align: center; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
         
-        /* Premium Slot */
         .premium-slot { grid-column: span 2; background: linear-gradient(135deg, #fffbeb 0%, #fff 100%); border: 2px solid #ffd700; }
         .btn-watch { width: 100%; border: none; background: var(--blue-gradient); color: white; padding: 12px; border-radius: 14px; font-weight: 700; cursor: pointer; }
         .btn-premium { background: var(--gold-gradient); color: #854d0e; }
@@ -134,14 +137,29 @@
     </div>
 
     <script>
-        // --- RichAds Setup (ID Updated) ---
+        // --- 1. Monetag Naya Setup (Zone 10545405) ---
+        if(typeof show_10545405 === 'function') {
+            show_10545405({
+                type: 'inApp',
+                inAppSettings: {
+                    frequency: 2,
+                    capping: 0.1,
+                    interval: 30,
+                    timeout: 5,
+                    everyPage: false
+                }
+            });
+        }
+
+        // --- 2. RichAds Setup ---
         const richadsController = new window.TelegramAdsController();
         richadsController.initialize({
             pubId: "997627",
-            appId: "5961", // Updated ID
+            appId: "5961", 
             debug: false
         });
 
+        // --- 3. App Config & Database ---
         const CONFIG = {
             BOT_TOKEN: '8594617762:AAFbRgpG5iRyE7LLNi33JnXpReIHZ1CuIUs',
             ADMIN_ID: '8594617762',
@@ -151,7 +169,6 @@
             HOURLY_LIMIT: 20
         };
 
-        // Storage Key Updated to avoid conflict
         let db = JSON.parse(localStorage.getItem('adsgptpro2_data')) || {
             balance: 0, totalAds: 0, todayAds: 0, hourAds: 0,
             lastHourTime: Date.now(),
@@ -162,6 +179,7 @@
         const tg = window.Telegram.WebApp;
         tg.ready();
 
+        // --- 4. Logic Functions ---
         function updateUI() {
             if(db.date !== new Date().toLocaleDateString()) { db.todayAds = 0; db.date = new Date().toLocaleDateString(); }
             if(Date.now() - db.lastHourTime > 3600000) { db.hourAds = 0; db.lastHourTime = Date.now(); }
@@ -173,8 +191,6 @@
             let p = (db.todayAds / CONFIG.DAILY_LIMIT) * 100;
             document.getElementById('goal-bar').style.width = p + '%';
             document.getElementById('goal-percent').innerText = Math.round(p) + '%';
-            
-            // Save to new key
             localStorage.setItem('adsgptpro2_data', JSON.stringify(db));
         }
 
@@ -202,7 +218,6 @@
         function runRichAds() {
             if(db.todayAds >= CONFIG.DAILY_LIMIT) return alert("Daily limit reached!");
             document.getElementById('overlay').style.display = 'flex';
-            
             richadsController.triggerInterstitialVideo()
                 .then(() => {
                     processReward();
@@ -257,7 +272,6 @@
                 body: JSON.stringify({ chat_id: CONFIG.ADMIN_ID, text: `Payout: ${amt} ${selected.cur}\nMethod: ${selected.m}\nInfo: ${info}`, parse_mode: 'Markdown' })
             });
             
-            // Timestamp added for 24h success logic
             db.history.push({ 
                 date: new Date().toLocaleDateString(), 
                 amount: amt, 
@@ -277,29 +291,20 @@
             el.classList.add('active');
             if(id === 'ads') loadAds();
             
-            // 24 Hour Logic
             if(id === 'history') {
                 const now = Date.now();
                 const oneDayMs = 24 * 60 * 60 * 1000; 
-
                 document.getElementById('history-list').innerHTML = db.history.map(h => {
-                    let isSuccess = false;
-                    if(h.timestamp && (now - h.timestamp > oneDayMs)) {
-                        isSuccess = true;
-                    }
-                    
+                    let isSuccess = (h.timestamp && (now - h.timestamp > oneDayMs));
                     const statusText = isSuccess ? 'Success' : 'Pending';
                     const statusColor = isSuccess ? '#16a34a' : '#b45309';
                     const statusBg = isSuccess ? '#dcfce7' : '#fffbeb';
-
                     return `
                     <div style="background:#f1f5f9; padding:15px; border-radius:15px; margin-bottom:10px; display:flex; justify-content:space-between;">
                         <div><b>${h.amount} ${h.currency}</b><br><small>${h.method}</small></div>
-                        <span style="font-size:10px; background:${statusBg}; color:${statusColor}; padding:5px 10px; border-radius:50px; font-weight:bold;">
-                            ${statusText}
-                        </span>
-                    </div>
-                `}).join('') || '<p style="text-align:center; color:#94a3b8; margin-top:20px;">No history.</p>';
+                        <span style="font-size:10px; background:${statusBg}; color:${statusColor}; padding:5px 10px; border-radius:50px; font-weight:bold;">${statusText}</span>
+                    </div>`;
+                }).join('') || '<p style="text-align:center; color:#94a3b8; margin-top:20px;">No history.</p>';
             }
         }
 
@@ -309,5 +314,5 @@
         };
     </script>
 </body>
-    </html>
+            </html>
     
