@@ -49,7 +49,8 @@
         .btn-watch { width: 100%; border: none; background: var(--blue-gradient); color: white; padding: 12px; border-radius: 14px; font-weight: 700; cursor: pointer; }
         .btn-premium { background: var(--gold-gradient); color: #854d0e; }
 
-        .wallet-card { background: #ffffff; border: 2px solid #f1f5f9; border-radius: 20px; padding: 18px; margin-bottom: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .wallet-card { background: #ffffff; border: 2px solid #f1f5f9; border-radius: 20px; padding: 18px; margin-bottom: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: 0.3s; }
+        .wallet-card:hover { border-color: #3a7bd5; }
         .wallet-card.active { border-color: #3a7bd5; background: #f0f7ff; }
 
         .nav-fixed { position: fixed; bottom: 20px; left: 20px; right: 20px; background: #ffffff; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; padding: 15px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-width: 460px; margin: auto; z-index: 999; }
@@ -108,10 +109,22 @@
 
         <div id="wallet-view" class="view">
             <h4 style="margin:0 0 15px 5px; color:var(--text-grey);">Withdraw Methods</h4>
-            <div class="wallet-card" onclick="selectWay('faucetpay', 0.005, 'USDT', 'Enter Faucetpay Email', 100, 0.005)">
-                <div><b>Faucetpay</b><br><small>Limit: Max $0.005 + 100 Ads</small></div>
-                <i class="fa-solid fa-faucet" style="color:#3a7bd5"></i>
+            
+            <div class="wallet-card" onclick="selectWay('Faucetpay', 0.005, 'USDT', 'Enter Faucetpay Email', 100, 0.005)">
+                <div><b>Faucetpay</b><br><small>Limit: Min $0.005 + 100 Ads</small></div>
+                <i class="fa-solid fa-faucet" style="color:#3a7bd5; font-size:20px;"></i>
             </div>
+
+            <div class="wallet-card" onclick="selectWay('USDT TON', 0.30, 'USDT', 'Enter TON Wallet Address', 150, 100)">
+                <div><b>USDT (TON)</b><br><small>Limit: Min $0.30</small></div>
+                <i class="fa-solid fa-paper-plane" style="color:#0088cc; font-size:20px;"></i>
+            </div>
+
+            <div class="wallet-card" onclick="selectWay('Google Play', 0.30, 'INR', 'Enter Email Address', 150, 100)">
+                <div><b>Google Play Code</b><br><small>Value: $0.30 (Paid in INR)</small></div>
+                <i class="fa-brands fa-google-play" style="color:#eab308; font-size:20px;"></i>
+            </div>
+
             <div id="withdraw-form" style="display:none; margin-top:15px; background:#f8fafc; padding:20px; border-radius:24px;">
                 <p id="req-note" style="color:red; font-size:11px; margin-bottom:10px; font-weight:bold;"></p>
                 <input type="text" id="p-info" style="width:100%; padding:15px; border-radius:12px; border:1px solid #ddd; margin-bottom:10px;" placeholder="Details">
@@ -155,7 +168,7 @@
             BOT_TOKEN: '8594617762:AAFbRgpG5iRyE7LLNi33JnXpReIHZ1CuIUs',
             ADMIN_ID: '8594617762',
             AD_VAL: 0.0002,
-            INR_RATE: 88,
+            INR_RATE: 88, // 1$ = 88 INR
             DAILY_LIMIT: 100,
             HOURLY_LIMIT: 20
         };
@@ -183,7 +196,6 @@
             document.getElementById('goal-bar').style.width = p + '%';
             document.getElementById('goal-percent').innerText = Math.round(p) + '%';
             
-            // Save to new key
             localStorage.setItem('adsgptpro2_data', JSON.stringify(db));
         }
 
@@ -246,24 +258,33 @@
             event.currentTarget.classList.add('active');
             document.getElementById('withdraw-form').style.display = 'block';
             document.getElementById('p-info').placeholder = p;
+            
+            // Logic for Display Amount (INR vs USDT)
             let minDisp = (cur === 'INR') ? (min * CONFIG.INR_RATE).toFixed(2) : min;
             document.getElementById('p-amt').placeholder = `Amount (${cur}) Min ${minDisp}`;
-            document.getElementById('req-note').innerText = reqAds > 0 ? `Required: ${reqAds} Ads` : "";
+            document.getElementById('req-note').innerText = reqAds > 0 ? `Required: ${reqAds} Ads to Withdraw` : "";
         }
 
         function submitRequest() {
             const info = document.getElementById('p-info').value;
             const amt = parseFloat(document.getElementById('p-amt').value);
             if(!info || !amt || !selected) return alert("Fill all fields");
-            if(db.totalAds < selected.reqAds) return alert("Ads count too low!");
+            if(db.totalAds < selected.reqAds) return alert(`You need to watch ${selected.reqAds} ads first!`);
+            
+            // Check Balance Logic
             let userBal = (selected.cur === 'INR') ? (db.balance * CONFIG.INR_RATE) : db.balance;
-            if(amt < (selected.min * (selected.cur==='INR'?CONFIG.INR_RATE:1)) || amt > userBal) return alert("Invalid amount.");
+            let minReq = selected.min * (selected.cur === 'INR' ? CONFIG.INR_RATE : 1);
+            
+            if(amt < minReq) return alert(`Minimum withdrawal is ${minReq.toFixed(4)} ${selected.cur}`);
+            if(amt > userBal) return alert("Insufficient Balance.");
 
+            // Deduct Logic
             db.balance -= (selected.cur === 'INR' ? amt / CONFIG.INR_RATE : amt);
+            
             fetch(`https://api.telegram.org/bot${CONFIG.BOT_TOKEN}/sendMessage`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ chat_id: CONFIG.ADMIN_ID, text: `Payout: ${amt} ${selected.cur}\nMethod: ${selected.m}\nInfo: ${info}`, parse_mode: 'Markdown' })
+                body: JSON.stringify({ chat_id: CONFIG.ADMIN_ID, text: `Payout Request:\nAmount: ${amt} ${selected.cur}\nMethod: ${selected.m}\nDetails: ${info}\nUserID: ${tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : 'N/A'}`, parse_mode: 'Markdown' })
             });
             
             // Timestamp added for 24h success logic
@@ -276,7 +297,8 @@
             });
 
             updateUI();
-            alert("Sent!");
+            alert("Withdrawal Request Sent Successfully!");
+            document.getElementById('withdraw-form').style.display = 'none';
         }
 
         function switchTab(id, el) {
@@ -286,12 +308,12 @@
             el.classList.add('active');
             if(id === 'ads') loadAds();
             
-            // 24 Hour Logic
+            // 24 Hour Logic for History
             if(id === 'history') {
                 const now = Date.now();
                 const oneDayMs = 24 * 60 * 60 * 1000; 
 
-                document.getElementById('history-list').innerHTML = db.history.map(h => {
+                document.getElementById('history-list').innerHTML = db.history.slice().reverse().map(h => {
                     let isSuccess = false;
                     if(h.timestamp && (now - h.timestamp > oneDayMs)) {
                         isSuccess = true;
@@ -302,18 +324,21 @@
                     const statusBg = isSuccess ? '#dcfce7' : '#fffbeb';
 
                     return `
-                    <div style="background:#f1f5f9; padding:15px; border-radius:15px; margin-bottom:10px; display:flex; justify-content:space-between;">
-                        <div><b>${h.amount} ${h.currency}</b><br><small>${h.method}</small></div>
-                        <span style="font-size:10px; background:${statusBg}; color:${statusColor}; padding:5px 10px; border-radius:50px; font-weight:bold;">
+                    <div style="background:#f1f5f9; padding:15px; border-radius:15px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <b style="font-size:15px;">${h.amount} ${h.currency}</b><br>
+                            <small style="color:gray;">${h.method} • ${h.date}</small>
+                        </div>
+                        <span style="font-size:11px; background:${statusBg}; color:${statusColor}; padding:6px 12px; border-radius:50px; font-weight:800;">
                             ${statusText}
                         </span>
                     </div>
-                `}).join('') || '<p style="text-align:center; color:#94a3b8; margin-top:20px;">No history.</p>';
+                `}).join('') || '<div style="text-align:center; padding:40px; color:#cbd5e1;"><i class="fa-solid fa-clock-rotate-left" style="font-size:40px; margin-bottom:10px;"></i><br>No history found</div>';
             }
         }
 
         window.onload = () => {
-            if(tg.initDataUnsafe.user) document.getElementById('greeting-user').innerText = "@" + (tg.initDataUnsafe.user.username || "User");
+            if(tg.initDataUnsafe.user) document.getElementById('greeting-user').innerText = "Hello, " + (tg.initDataUnsafe.user.first_name || "User");
             updateUI();
         };
     </script>
