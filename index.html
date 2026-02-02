@@ -44,13 +44,11 @@
         .ads-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .ad-card { background: #ffffff; border: 1px solid #f1f5f9; border-radius: 24px; padding: 20px 15px; text-align: center; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
         
-        /* Premium Slot */
         .premium-slot { grid-column: span 2; background: linear-gradient(135deg, #fffbeb 0%, #fff 100%); border: 2px solid #ffd700; }
         .btn-watch { width: 100%; border: none; background: var(--blue-gradient); color: white; padding: 12px; border-radius: 14px; font-weight: 700; cursor: pointer; }
         .btn-premium { background: var(--gold-gradient); color: #854d0e; }
 
         .wallet-card { background: #ffffff; border: 2px solid #f1f5f9; border-radius: 20px; padding: 18px; margin-bottom: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: 0.3s; }
-        .wallet-card:hover { border-color: #3a7bd5; }
         .wallet-card.active { border-color: #3a7bd5; background: #f0f7ff; }
 
         .nav-fixed { position: fixed; bottom: 20px; left: 20px; right: 20px; background: #ffffff; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; padding: 15px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-width: 460px; margin: auto; z-index: 999; }
@@ -59,7 +57,6 @@
 
         .view { display: none; }
         .view.active { display: block; animation: fadeIn 0.4s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         #overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.9); display: none; justify-content: center; align-items: center; z-index: 10000; }
     </style>
 </head>
@@ -147,33 +144,22 @@
     </div>
 
     <script>
-        // --- RichAds Setup (ID Updated) ---
         const richadsController = new window.TelegramAdsController();
         richadsController.initialize({
             pubId: "997627",
-            appId: "5961", // Updated ID
+            appId: "5961",
             debug: false
         });
-
-        // Initialize Monetag
-        if(typeof show_10545405 === 'function') {
-            show_10545405({
-                type: 'inApp',
-                inAppSettings: { frequency: 2, capping: 0.1, interval: 30, timeout: 5, everyPage: false }
-            });
-        }
-        
 
         const CONFIG = {
             BOT_TOKEN: '8594617762:AAFbRgpG5iRyE7LLNi33JnXpReIHZ1CuIUs',
             ADMIN_ID: '8594617762',
             AD_VAL: 0.0002,
-            INR_RATE: 88, // 1$ = 88 INR
+            INR_RATE: 88,
             DAILY_LIMIT: 100,
             HOURLY_LIMIT: 20
         };
 
-        // Storage Key Updated to avoid conflict
         let db = JSON.parse(localStorage.getItem('adsgptpro2_data')) || {
             balance: 0, totalAds: 0, todayAds: 0, hourAds: 0,
             lastHourTime: Date.now(),
@@ -185,13 +171,16 @@
         tg.ready();
 
         function updateUI() {
+            db.balance = parseFloat(db.balance);
             if(db.date !== new Date().toLocaleDateString()) { db.todayAds = 0; db.date = new Date().toLocaleDateString(); }
             if(Date.now() - db.lastHourTime > 3600000) { db.hourAds = 0; db.lastHourTime = Date.now(); }
+            
             document.getElementById('display-usdt').innerText = db.balance.toFixed(4) + ' USDT';
             document.getElementById('display-inr').innerText = '₹ ' + (db.balance * CONFIG.INR_RATE).toFixed(2);
             document.getElementById('today-count').innerText = db.todayAds;
             document.getElementById('hour-count').innerText = db.hourAds;
             document.getElementById('total-ads-count').innerText = db.totalAds;
+            
             let p = (db.todayAds / CONFIG.DAILY_LIMIT) * 100;
             document.getElementById('goal-bar').style.width = p + '%';
             document.getElementById('goal-percent').innerText = Math.round(p) + '%';
@@ -223,23 +212,17 @@
         function runRichAds() {
             if(db.todayAds >= CONFIG.DAILY_LIMIT) return alert("Daily limit reached!");
             document.getElementById('overlay').style.display = 'flex';
-            
             richadsController.triggerInterstitialVideo()
-                .then(() => {
-                    processReward();
-                    alert("Success! You earned 0.0002 USDT");
-                })
-                .catch(() => alert("Task not available right now."))
+                .then(() => processReward())
+                .catch(() => alert("Task not available."))
                 .finally(() => document.getElementById('overlay').style.display = 'none');
         }
 
         function runAd() {
             if(db.todayAds >= CONFIG.DAILY_LIMIT || db.hourAds >= CONFIG.HOURLY_LIMIT) return alert("Limit reached!");
             document.getElementById('overlay').style.display = 'flex';
-            window.showGiga().then(() => {
-                processReward();
-                alert("Success! You earned 0.0002 USDT");
-            }).catch(() => alert("Ad error."))
+            window.showGiga().then(() => processReward())
+            .catch(() => alert("Ad error."))
             .finally(() => document.getElementById('overlay').style.display = 'none');
         }
 
@@ -257,37 +240,44 @@
             document.querySelectorAll('.wallet-card').forEach(c => c.classList.remove('active'));
             event.currentTarget.classList.add('active');
             document.getElementById('withdraw-form').style.display = 'block';
+            document.getElementById('p-info').value = "";
             document.getElementById('p-info').placeholder = p;
-            
-            // Logic for Display Amount (INR vs USDT)
             let minDisp = (cur === 'INR') ? (min * CONFIG.INR_RATE).toFixed(2) : min;
             document.getElementById('p-amt').placeholder = `Amount (${cur}) Min ${minDisp}`;
             document.getElementById('req-note').innerText = reqAds > 0 ? `Required: ${reqAds} Ads to Withdraw` : "";
         }
 
+        // ============ BALACE CUT SCRIPT START ============
         function submitRequest() {
             const info = document.getElementById('p-info').value;
             const amt = parseFloat(document.getElementById('p-amt').value);
-            if(!info || !amt || !selected) return alert("Fill all fields");
-            if(db.totalAds < selected.reqAds) return alert(`You need to watch ${selected.reqAds} ads first!`);
             
-            // Check Balance Logic
+            if(!info || isNaN(amt) || amt <= 0 || !selected) return alert("Please enter valid details");
+            if(db.totalAds < selected.reqAds) return alert(`Need ${selected.reqAds} ads watched!`);
+            
+            // Calculating user's current balance in selected currency
             let userBal = (selected.cur === 'INR') ? (db.balance * CONFIG.INR_RATE) : db.balance;
             let minReq = selected.min * (selected.cur === 'INR' ? CONFIG.INR_RATE : 1);
             
-            if(amt < minReq) return alert(`Minimum withdrawal is ${minReq.toFixed(4)} ${selected.cur}`);
-            if(amt > userBal) return alert("Insufficient Balance.");
+            if(amt < minReq) return alert(`Minimum is ${minReq.toFixed(2)} ${selected.cur}`);
+            if(amt > userBal) return alert("Insufficient Balance!");
 
-            // Deduct Logic
-            db.balance -= (selected.cur === 'INR' ? amt / CONFIG.INR_RATE : amt);
+            // DEDUCTION LOGIC
+            let amountInUSDT = (selected.cur === 'INR') ? (amt / CONFIG.INR_RATE) : amt;
+            db.balance -= amountInUSDT; 
             
+            if(db.balance < 0) db.balance = 0; // Safety check
+
+            // Telegram Notification
+            const user = tg.initDataUnsafe.user || { first_name: 'Guest' };
+            const text = `💰 *Withdrawal Request*\n\nUser: ${user.first_name}\nAmount: ${amt} ${selected.cur}\nMethod: ${selected.m}\nDetails: ${info}\nRemaining: ${db.balance.toFixed(4)} USDT`;
+
             fetch(`https://api.telegram.org/bot${CONFIG.BOT_TOKEN}/sendMessage`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ chat_id: CONFIG.ADMIN_ID, text: `Payout Request:\nAmount: ${amt} ${selected.cur}\nMethod: ${selected.m}\nDetails: ${info}\nUserID: ${tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : 'N/A'}`, parse_mode: 'Markdown' })
+                body: JSON.stringify({ chat_id: CONFIG.ADMIN_ID, text: text, parse_mode: 'Markdown' })
             });
             
-            // Timestamp added for 24h success logic
             db.history.push({ 
                 date: new Date().toLocaleDateString(), 
                 amount: amt, 
@@ -296,10 +286,11 @@
                 timestamp: Date.now() 
             });
 
-            updateUI();
-            alert("Withdrawal Request Sent Successfully!");
+            updateUI(); // Dashboard update instant
+            alert("Request Sent! Balance has been deducted.");
             document.getElementById('withdraw-form').style.display = 'none';
         }
+        // ============ BALANCE CUT SCRIPT END ============
 
         function switchTab(id, el) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -307,34 +298,24 @@
             document.getElementById(id + '-view').classList.add('active');
             el.classList.add('active');
             if(id === 'ads') loadAds();
-            
-            // 24 Hour Logic for History
-            if(id === 'history') {
-                const now = Date.now();
-                const oneDayMs = 24 * 60 * 60 * 1000; 
+            if(id === 'history') renderHistory();
+        }
 
-                document.getElementById('history-list').innerHTML = db.history.slice().reverse().map(h => {
-                    let isSuccess = false;
-                    if(h.timestamp && (now - h.timestamp > oneDayMs)) {
-                        isSuccess = true;
-                    }
-                    
-                    const statusText = isSuccess ? 'Success' : 'Pending';
-                    const statusColor = isSuccess ? '#16a34a' : '#b45309';
-                    const statusBg = isSuccess ? '#dcfce7' : '#fffbeb';
+        function renderHistory() {
+            const list = document.getElementById('history-list');
+            const now = Date.now();
+            const oneDay = 24 * 60 * 60 * 1000;
 
-                    return `
+            list.innerHTML = db.history.slice().reverse().map(h => {
+                const isSuccess = h.timestamp && (now - h.timestamp > oneDay);
+                return `
                     <div style="background:#f1f5f9; padding:15px; border-radius:15px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-                        <div>
-                            <b style="font-size:15px;">${h.amount} ${h.currency}</b><br>
-                            <small style="color:gray;">${h.method} • ${h.date}</small>
-                        </div>
-                        <span style="font-size:11px; background:${statusBg}; color:${statusColor}; padding:6px 12px; border-radius:50px; font-weight:800;">
-                            ${statusText}
+                        <div><b>${h.amount} ${h.currency}</b><br><small>${h.method} • ${h.date}</small></div>
+                        <span style="font-size:11px; background:${isSuccess ? '#dcfce7' : '#fffbeb'}; color:${isSuccess ? '#16a34a' : '#b45309'}; padding:6px 12px; border-radius:50px; font-weight:800;">
+                            ${isSuccess ? 'Success' : 'Pending'}
                         </span>
-                    </div>
-                `}).join('') || '<div style="text-align:center; padding:40px; color:#cbd5e1;"><i class="fa-solid fa-clock-rotate-left" style="font-size:40px; margin-bottom:10px;"></i><br>No history found</div>';
-            }
+                    </div>`;
+            }).join('') || '<div style="text-align:center; padding:40px; color:#cbd5e1;">No history found</div>';
         }
 
         window.onload = () => {
