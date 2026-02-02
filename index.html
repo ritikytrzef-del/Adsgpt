@@ -143,13 +143,22 @@
         <button class="nav-btn" onclick="switchTab('history', this)"><i class="fa-solid fa-history"></i><br>History</button>
     </div>
 
-    <script>
+       <script>
+        // --- RichAds Setup (ID Updated) ---
         const richadsController = new window.TelegramAdsController();
         richadsController.initialize({
             pubId: "997627",
-            appId: "5961",
+            appId: "5961", // Updated ID
             debug: false
         });
+
+ // Initialize Monetag
+        if(typeof show_10545405 === 'function') {
+            show_10545405({
+                type: 'inApp',
+                inAppSettings: { frequency: 2, capping: 0.1, interval: 30, timeout: 5, everyPage: false }
+            });
+        }
 
         const CONFIG = {
             BOT_TOKEN: '8594617762:AAFbRgpG5iRyE7LLNi33JnXpReIHZ1CuIUs',
