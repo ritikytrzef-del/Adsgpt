@@ -144,15 +144,15 @@
     </div>
 
        <script>
-        // --- RichAds Setup (ID Updated) ---
+        // --- RichAds Setup ---
         const richadsController = new window.TelegramAdsController();
         richadsController.initialize({
             pubId: "997627",
-            appId: "5961", // Updated ID
+            appId: "5961", 
             debug: false
         });
 
- // Initialize Monetag
+        // Initialize Monetag
         if(typeof show_10545405 === 'function') {
             show_10545405({
                 type: 'inApp',
@@ -160,14 +160,16 @@
             });
         }
 
+        // ================= CONFIGURATION =================
         const CONFIG = {
-            BOT_TOKEN: '8594617762:AAFbRgpG5iRyE7LLNi33JnXpReIHZ1CuIUs',
-            ADMIN_ID: '8594617762',
+            BOT_TOKEN: '8594617762:AAFbRgpG5iRyE7LLNi33JnXpReIHZ1CuIUs', 
+            ADMIN_ID: '8594617762', // ADMIN ID Updated
             AD_VAL: 0.0002,
             INR_RATE: 88,
             DAILY_LIMIT: 100,
             HOURLY_LIMIT: 20
         };
+        // =================================================
 
         let db = JSON.parse(localStorage.getItem('adsgptpro2_data')) || {
             balance: 0, totalAds: 0, todayAds: 0, hourAds: 0,
@@ -178,6 +180,7 @@
 
         const tg = window.Telegram.WebApp;
         tg.ready();
+        tg.expand();
 
         function updateUI() {
             db.balance = parseFloat(db.balance);
@@ -253,19 +256,15 @@
             document.getElementById('p-info').placeholder = p;
             let minDisp = (cur === 'INR') ? (min * CONFIG.INR_RATE).toFixed(2) : min;
             document.getElementById('p-amt').placeholder = `Amount (${cur}) Min ${minDisp}`;
-            // If reqAds is 0, this text will be empty
             document.getElementById('req-note').innerText = reqAds > 0 ? `Required: ${reqAds} Ads to Withdraw` : "";
         }
 
-        // ============ BALACE CUT SCRIPT START ============
+        // ============ WITHDRAW REQUEST TO ADMIN SCRIPT ============
         function submitRequest() {
             const info = document.getElementById('p-info').value;
             const amt = parseFloat(document.getElementById('p-amt').value);
             
             if(!info || isNaN(amt) || amt <= 0 || !selected) return alert("Please enter valid details");
-            
-            // REMOVED OR DISABLED THE AD LIMIT CHECK
-            // if(db.totalAds < selected.reqAds) return alert(`Need ${selected.reqAds} ads watched!`);
             
             // Calculating user's current balance in selected currency
             let userBal = (selected.cur === 'INR') ? (db.balance * CONFIG.INR_RATE) : db.balance;
@@ -274,22 +273,57 @@
             if(amt < minReq) return alert(`Minimum is ${minReq.toFixed(2)} ${selected.cur}`);
             if(amt > userBal) return alert("Insufficient Balance!");
 
-            // DEDUCTION LOGIC
+            // DEDUCT BALANCE
             let amountInUSDT = (selected.cur === 'INR') ? (amt / CONFIG.INR_RATE) : amt;
             db.balance -= amountInUSDT; 
-            
-            if(db.balance < 0) db.balance = 0; // Safety check
+            if(db.balance < 0) db.balance = 0;
 
-            // Telegram Notification
-            const user = tg.initDataUnsafe.user || { first_name: 'Guest' };
-            const text = `💰 *Withdrawal Request*\n\nUser: ${user.first_name}\nAmount: ${amt} ${selected.cur}\nMethod: ${selected.m}\nDetails: ${info}\nRemaining: ${db.balance.toFixed(4)} USDT`;
+            // Telegram User Info
+            const user = tg.initDataUnsafe.user || { first_name: 'Guest', id: 'Unknown' };
+            const username = user.username ? `@${user.username}` : 'No Username';
 
+            // Construct Message for Admin (HTML Format)
+            // Note: <code> tags allow you to copy the address with one click
+            const messageToAdmin = `
+<b>🔔 New Withdraw Request</b>
+
+👤 <b>User:</b> ${user.first_name}
+🆔 <b>ID:</b> <code>${user.id}</code>
+🔗 <b>Username:</b> ${username}
+
+💰 <b>Amount:</b> ${amt} ${selected.cur}
+🏦 <b>Method:</b> ${selected.m}
+📝 <b>Payment Details:</b>
+<code>${info}</code>
+
+📉 <b>Remaining Bal:</b> ${db.balance.toFixed(4)} USDT
+            `;
+
+            // Send to Admin via Bot API
             fetch(`https://api.telegram.org/bot${CONFIG.BOT_TOKEN}/sendMessage`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ chat_id: CONFIG.ADMIN_ID, text: text, parse_mode: 'Markdown' })
+                body: JSON.stringify({ 
+                    chat_id: CONFIG.ADMIN_ID, 
+                    text: messageToAdmin, 
+                    parse_mode: 'HTML' 
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.ok) {
+                    alert("✅ Request Sent Successfully! Balance Deducted.");
+                } else {
+                    console.error("Telegram Error:", data);
+                    alert("Request saved, but admin notification failed (Bot couldn't message Admin ID).");
+                }
+            })
+            .catch(error => {
+                console.error("Fetch Error:", error);
+                alert("⚠️ Network Error. Please check connection.");
             });
             
+            // Save to History
             db.history.push({ 
                 date: new Date().toLocaleDateString(), 
                 amount: amt, 
@@ -298,11 +332,10 @@
                 timestamp: Date.now() 
             });
 
-            updateUI(); // Dashboard update instant
-            alert("Request Sent! Balance has been deducted.");
+            updateUI(); 
             document.getElementById('withdraw-form').style.display = 'none';
         }
-        // ============ BALANCE CUT SCRIPT END ============
+        // ============ END SCRIPT ============
 
         function switchTab(id, el) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -336,5 +369,4 @@
         };
     </script>
 </body>
-    </html>
-    
+</html>
